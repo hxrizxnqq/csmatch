@@ -20,13 +20,9 @@ const config = {
     sessionSecret: process.env.SESSION_SECRET || 'csmatch-default-secret',
   },
 
-  // Database configuration
+  // Database configuration (MongoDB)
   database: {
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    name: process.env.DB_NAME || 'csmatch',
-    port: parseInt(process.env.DB_PORT) || 3306,
+    uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/csmatch',
   },
 
   // Steam API configuration

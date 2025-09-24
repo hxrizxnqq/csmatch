@@ -1,128 +1,164 @@
-const mysql = require('mysql2');
+const mongoose = require('mongoose');
 
-// Create connection pool
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'csmatch',
-  port: process.env.DB_PORT || 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  acquireTimeout: 60000,
-  timeout: 60000
+// User Schema
+const userSchema = new mongoose.Schema({
+  telegram_id: {
+    type: Number,
+    required: true,
+    unique: true,
+    index: true
+  },
+  telegram_username: String,
+  steam_id: {
+    type: String,
+    unique: true,
+    sparse: true,
+    index: true
+  },
+  steam_username: String,
+  avatar_url: String,
+  profile_url: String,
+  cs2_rank: String,
+  faceit_level: Number,
+  faceit_elo: Number
+}, {
+  timestamps: true  // Creates createdAt and updatedAt automatically
 });
 
-// Get promisified version
-const promisePool = pool.promise();
+// Match Request Schema
+const matchRequestSchema = new mongoose.Schema({
+  user_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  game_type: {
+    type: String,
+    enum: ['cs2', 'faceit'],
+    required: true,
+    index: true
+  },
+  rank_requirement: String,
+  message: String,
+  is_active: {
+    type: Boolean,
+    default: true,
+    index: true
+  },
+  expires_at: Date
+}, {
+  timestamps: true
+});
+
+// Create models
+const User = mongoose.model('User', userSchema);
+const MatchRequest = mongoose.model('MatchRequest', matchRequestSchema);
+
+// Connect to MongoDB
+const connectDB = async () => {
+  try {
+    const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/csmatch';
+    await mongoose.connect(uri);
+    console.log('✅ MongoDB connection successful');
+    return true;
+  } catch (error) {
+    console.error('❌ MongoDB connection failed:', error.message);
+    return false;
+  }
+};
 
 // Test database connection
 const testConnection = async () => {
   try {
-    const [rows] = await promisePool.execute('SELECT 1 as test');
-    console.log('✅ Database connection successful');
-    return true;
+    if (mongoose.connection.readyState === 1) {
+      console.log('✅ Database connection successful');
+      return true;
+    } else {
+      return await connectDB();
+    }
   } catch (error) {
     console.error('❌ Database connection failed:', error.message);
     return false;
   }
 };
 
-// Initialize database tables
+// Initialize database (ensures connection and indexes)
 const initializeTables = async () => {
   try {
-    // Users table
-    await promisePool.execute(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        telegram_id BIGINT UNIQUE NOT NULL,
-        telegram_username VARCHAR(255),
-        steam_id VARCHAR(255) UNIQUE,
-        steam_username VARCHAR(255),
-        avatar_url TEXT,
-        profile_url TEXT,
-        cs2_rank VARCHAR(50),
-        faceit_level INT,
-        faceit_elo INT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_telegram_id (telegram_id),
-        INDEX idx_steam_id (steam_id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    // Match requests table
-    await promisePool.execute(`
-      CREATE TABLE IF NOT EXISTS match_requests (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        user_id INT NOT NULL,
-        game_type ENUM('cs2', 'faceit') NOT NULL,
-        rank_requirement VARCHAR(50),
-        message TEXT,
-        is_active BOOLEAN DEFAULT TRUE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        expires_at TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        INDEX idx_active (is_active),
-        INDEX idx_game_type (game_type)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    console.log('✅ Database tables initialized');
+    await connectDB();
+    
+    // Ensure indexes are created
+    await User.createIndexes();
+    await MatchRequest.createIndexes();
+    
+    console.log('✅ Database collections and indexes initialized');
   } catch (error) {
-    console.error('❌ Failed to initialize tables:', error.message);
+    console.error('❌ Failed to initialize collections:', error.message);
   }
 };
 
 // Database methods
 const db = {
-  pool: promisePool,
+  User,
+  MatchRequest,
+  connectDB,
   testConnection,
   initializeTables,
   
   // User methods
   async getUserByTelegramId(telegramId) {
-    const [rows] = await promisePool.execute(
-      'SELECT * FROM users WHERE telegram_id = ?',
-      [telegramId]
-    );
-    return rows[0] || null;
+    try {
+      const user = await User.findOne({ telegram_id: telegramId });
+      return user;
+    } catch (error) {
+      console.error('Error getting user by telegram ID:', error.message);
+      return null;
+    }
   },
 
   async getUserBySteamId(steamId) {
-    const [rows] = await promisePool.execute(
-      'SELECT * FROM users WHERE steam_id = ?',
-      [steamId]
-    );
-    return rows[0] || null;
+    try {
+      const user = await User.findOne({ steam_id: steamId });
+      return user;
+    } catch (error) {
+      console.error('Error getting user by steam ID:', error.message);
+      return null;
+    }
   },
 
   async createUser(userData) {
-    const [result] = await promisePool.execute(
-      'INSERT INTO users (telegram_id, telegram_username) VALUES (?, ?)',
-      [userData.telegram_id, userData.telegram_username]
-    );
-    return result.insertId;
+    try {
+      const user = new User({
+        telegram_id: userData.telegram_id,
+        telegram_username: userData.telegram_username
+      });
+      const savedUser = await user.save();
+      return savedUser._id;
+    } catch (error) {
+      console.error('Error creating user:', error.message);
+      throw error;
+    }
   },
 
   async linkSteamToTelegram(telegramId, steamData) {
-    await promisePool.execute(
-      `UPDATE users SET 
-        steam_id = ?, 
-        steam_username = ?, 
-        avatar_url = ?, 
-        profile_url = ?,
-        updated_at = CURRENT_TIMESTAMP
-       WHERE telegram_id = ?`,
-      [
-        steamData.steam_id,
-        steamData.steam_username,
-        steamData.avatar_url,
-        steamData.profile_url,
-        telegramId
-      ]
-    );
+    try {
+      const result = await User.updateOne(
+        { telegram_id: telegramId },
+        {
+          $set: {
+            steam_id: steamData.steam_id,
+            steam_username: steamData.steam_username,
+            avatar_url: steamData.avatar_url,
+            profile_url: steamData.profile_url,
+            updatedAt: new Date()
+          }
+        }
+      );
+      return result;
+    } catch (error) {
+      console.error('Error linking steam to telegram:', error.message);
+      throw error;
+    }
   }
 };
 

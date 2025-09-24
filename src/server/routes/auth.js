@@ -42,9 +42,8 @@ passport.serializeUser((user, done) => {
 
 passport.deserializeUser(async (steamId, done) => {
   try {
-    // Here you would typically fetch user from database
-    // const user = await db.getUserBySteamId(steamId);
-    done(null, { steam_id: steamId });
+    const user = await db.getUserBySteamId(steamId);
+    done(null, user || { steam_id: steamId });
   } catch (error) {
     done(error, null);
   }
@@ -70,8 +69,17 @@ router.get('/steam/return',
       const steamId = req.user.steam_id;
       
       if (telegramId && steamId) {
-        // Here you would link Steam account to Telegram user in database
-        // await db.linkSteamToTelegram(telegramId, steamId, req.user);
+        // Check if user exists, create if not
+        let user = await db.getUserByTelegramId(telegramId);
+        if (!user) {
+          await db.createUser({
+            telegram_id: telegramId,
+            telegram_username: req.session.telegram_username || ''
+          });
+        }
+        
+        // Link Steam account to Telegram user in database
+        await db.linkSteamToTelegram(telegramId, req.user);
         
         // Success page
         res.send(`

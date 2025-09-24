@@ -1,6 +1,17 @@
 require('dotenv').config();
+const db = require('./src/database/connection');
 const bot = require('./src/bot/bot');
 const server = require('./src/server/server');
+
+// Initialize database connection
+db.initializeTables()
+  .then(() => {
+    console.log('✅ Database initialized successfully');
+  })
+  .catch(err => {
+    console.error('❌ Database initialization failed:', err);
+    process.exit(1);
+  });
 
 // Start the bot
 bot.launch()
