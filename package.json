@@ -5,8 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "setup": "cp config/.env.example .env && echo 'Please edit .env file with your configuration'"
   },
   "keywords": ["telegram", "bot", "cs2", "counter-strike", "steam", "gaming"],
   "author": "hxrizxnqq",
