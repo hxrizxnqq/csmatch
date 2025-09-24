@@ -1,0 +1,31 @@
+{
+  "name": "csmatch",
+  "version": "1.0.0",
+  "description": "A Telegram bot who can help you with find a premate for CS2 and FaceIT matches.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "setup": "cp config/.env.example .env && echo 'Please edit .env file with your configuration'"
+  },
+  "keywords": ["telegram", "bot", "cs2", "counter-strike", "steam", "gaming"],
+  "author": "hxrizxnqq",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "passport": "^0.6.0",
+    "passport-steam": "^1.0.17",
+    "telegraf": "^4.15.6",
+    "mysql2": "^3.6.5",
+    "dotenv": "^16.3.1",
+    "axios": "^1.6.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
