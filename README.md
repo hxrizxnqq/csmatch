@@ -15,7 +15,7 @@ A Telegram bot that helps you find teammates for CS2 and FaceIT matches with Ste
 ### Prerequisites
 
 - Node.js 16+ 
-- MySQL database
+- MongoDB database
 - Telegram Bot Token (from @BotFather)
 - Steam API Key (from https://steamcommunity.com/dev/apikey)
 
@@ -38,9 +38,12 @@ cp config/.env.example .env
 # Edit .env with your configuration
 ```
 
-4. Set up MySQL database:
-```sql
-CREATE DATABASE csmatch;
+4. Set up MongoDB database:
+```bash
+# Start MongoDB service
+sudo systemctl start mongod
+# Or using Docker
+docker run -d -p 27017:27017 --name mongodb mongo
 ```
 
 5. Run the application:
@@ -54,7 +57,7 @@ Edit the `.env` file with your settings:
 
 - `BOT_TOKEN` - Your Telegram bot token
 - `STEAM_API_KEY` - Steam API key for user data
-- `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` - MySQL connection
+- `MONGODB_URI` - MongoDB connection string
 - `BASE_URL` - Your server URL for Steam auth callbacks
 
 ## Project Structure
@@ -71,7 +74,7 @@ src/
 │   └── routes/
 │       └── auth.js         # Steam OpenID authentication
 ├── database/
-│   └── connection.js       # MySQL connection and queries
+│   └── connection.js       # MongoDB connection and schemas
 └── utils/
     ├── steam.js           # Steam API utilities
     └── helpers.js         # General utility functions
