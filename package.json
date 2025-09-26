@@ -1,0 +1,33 @@
+{
+  "name": "csmatch",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
+    "restart-ngrok": "node -e \"require('./utils/ngrok').restart()\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hxrizxnqq/csmatch.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hxrizxnqq/csmatch/issues"
+  },
+  "homepage": "https://github.com/hxrizxnqq/csmatch#readme",
+  "dependencies": {
+    "axios": "^1.12.2",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "express-session": "^1.18.2",
+    "mongoose": "^8.18.2",
+    "ngrok": "^5.0.0-beta.2",
+    "passport": "^0.7.0",
+    "passport-steam": "^1.0.18",
+    "telegraf": "^4.16.3"
+  }
+}
